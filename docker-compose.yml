@@ -1,0 +1,37 @@
+version: "3.8"
+services:
+  model:
+    build:
+      context: .
+      dockerfile: ./inference_service/Dockerfile
+    container_name: kandinsky_model
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+    volumes:
+      - kandinsky_cache:/root/.cache
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  bot:
+    build:
+      context: ./bot
+    container_name: kandinsky_bot
+    env_file:
+      - .env
+    environment:
+      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+      - MODEL_URL=${MODEL_URL}
+    depends_on:
+      - model
+    restart: unless-stopped
+
+volumes:
+  kandinsky_cache:
